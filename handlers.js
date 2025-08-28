@@ -1,10 +1,6 @@
-import { GoogleGenAI } from '@google/genai';
 import 'dotenv/config';
-import fs from 'fs/promises';
+import geminiAI from './services/ai/gemini.js';
 import { extractText } from './utils.js';
-
-const GEMINI_MODEL = 'gemini-2.5-flash';
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export const GenerateText = async (req, res) => {
   const { prompt } = req.body;
@@ -12,10 +8,7 @@ export const GenerateText = async (req, res) => {
     return res.status(400).json({ error: 'Prompt is required' });
   }
   try {
-    const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: prompt,
-    });
+    const response = await geminiAI.generateText(prompt);
     res.json({ result: extractText(response) });
   } catch (error) {
     console.error('Error generating text:', error);
@@ -36,15 +29,7 @@ export const GenerateFromImage = async (req, res) => {
   }
 
   try {
-    // console.log('Received file:', req.file);
-    const imageBase64 = Buffer.from(await fs.readFile(req.file.path)).toString('base64');
-    // console.log('imageBase64:', imageBase64.substring(0, 30) + '...'); // Log first 30 chars
-    fs.unlink(req.file.path).catch((err) => console.error('Error deleting file:', err));
-
-    const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: [{ inlineData: { mimeType: req.file.mimetype, data: imageBase64 } }, { text: prompt }],
-    });
+    const response = await geminiAI.generateFromImage({ file: req.file, prompt });
     res.json({ result: extractText(response) });
   } catch (error) {
     console.error('Error generating text from image:', error);
@@ -58,15 +43,7 @@ export const GenerateFromDocument = async (req, res) => {
   }
   const { prompt } = req.body;
   try {
-    // console.log('Received file:', req.file);
-    const docBase64 = Buffer.from(await fs.readFile(req.file.path)).toString('base64');
-    // console.log('docBase64:', docBase64.substring(0, 30) + '...'); // Log first 30 chars
-    fs.unlink(req.file.path).catch((err) => console.error('Error deleting file:', err));
-
-    const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: [{ inlineData: { mimeType: req.file.mimetype, data: docBase64 } }, { text: prompt || 'Ringkas document berikut:' }],
-    });
+    const response = await geminiAI.generateFromDocument({ file: req.file, prompt });
     res.json({ result: extractText(response) });
   } catch (error) {
     console.error('Error generating text from document:', error);
@@ -82,14 +59,7 @@ export const GenerateFromAudio = async (req, res) => {
     return res.status(400).json({ error: 'Only WAV and MP3 audio files are supported' });
   }
   try {
-    // console.log('Received file:', req.file);
-    const audioBase64 = Buffer.from(await fs.readFile(req.file.path)).toString('base64');
-    // console.log('audioBase64:', audioBase64.substring(0, 30) + '...'); // Log first 30 chars
-    fs.unlink(req.file.path).catch((err) => console.error('Error deleting file:', err));
-    const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: [{ inlineData: { mimeType: req.file.mimetype, data: audioBase64 } }, { text: 'Buatkan transkrip dari audio berikut:' }],
-    });
+    const response = await geminiAI.generateFromAudio(req.file);
     res.json({ result: extractText(response) });
   } catch (error) {
     console.error('Error generating text from audio:', error);
