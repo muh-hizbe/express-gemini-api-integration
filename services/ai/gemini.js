@@ -1,3 +1,4 @@
+import { GoogleGenAI } from '@google/genai';
 import 'dotenv/config';
 import fs from 'fs/promises';
 const GEMINI_MODEL = 'gemini-2.5-flash';
